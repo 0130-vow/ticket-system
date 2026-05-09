@@ -8,24 +8,25 @@
     </div>
     
     <div class="filters">
-      <el-select v-model="filters.status" placeholder="状态" clearable>
+      <el-select v-model="filters.status" placeholder="状态" clearable @change="loadTickets">
         <el-option label="待处理" value="pending" />
         <el-option label="处理中" value="processing" />
         <el-option label="已解决" value="resolved" />
         <el-option label="已关闭" value="closed" />
       </el-select>
       
-      <el-select v-model="filters.priority" placeholder="优先级" clearable>
+      <el-select v-model="filters.priority" placeholder="优先级" clearable @change="loadTickets">
         <el-option label="P0 紧急" value="P0" />
         <el-option label="P1 高" value="P1" />
         <el-option label="P2 普通" value="P2" />
         <el-option label="P3 低" value="P3" />
       </el-select>
       
-      <el-input v-model="filters.keyword" placeholder="搜索标题..." clearable />
+      <el-input v-model="filters.keyword" placeholder="搜索标题..." clearable @keyup.enter="loadTickets" />
+      <el-button @click="loadTickets">搜索</el-button>
     </div>
     
-    <el-table :data="tickets" style="width: 100%">
+    <el-table :data="tickets" style="width: 100%" v-loading="loading">
       <el-table-column prop="id" label="工单号" width="120" />
       <el-table-column prop="title" label="标题" />
       <el-table-column prop="priority" label="优先级" width="100">
@@ -42,8 +43,12 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="assignee" label="负责人" width="120" />
-      <el-table-column prop="createdAt" label="创建时间" width="180" />
+      <el-table-column prop="assigneeId" label="负责人" width="120" />
+      <el-table-column prop="createdAt" label="创建时间" width="180">
+        <template #default="{ row }">
+          {{ formatDate(row.createdAt) }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="100">
         <template #default="{ row }">
           <el-button size="small" @click="viewTicket(row.id)">查看</el-button>
@@ -57,10 +62,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ticketApi } from '../api/ticket'
-import { PRIORITY_CONFIG, STATUS_CONFIG } from '../types/ticket'
+import { STATUS_CONFIG } from '../types/ticket'
 
 const router = useRouter()
 const tickets = ref([])
+const loading = ref(false)
 const filters = reactive({
   status: '',
   priority: '',
@@ -72,11 +78,16 @@ onMounted(() => {
 })
 
 async function loadTickets() {
+  loading.value = true
   try {
-    const { data } = await ticketApi.getList(filters)
-    tickets.value = data
+    const { data: res } = await ticketApi.getList(filters)
+    if (res.code === 200) {
+      tickets.value = res.data
+    }
   } catch (error) {
     console.error('Failed to load tickets:', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -106,6 +117,11 @@ function getStatusType(status: string) {
 
 function getStatusLabel(status: string) {
   return STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]?.label || status
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN')
 }
 </script>
 

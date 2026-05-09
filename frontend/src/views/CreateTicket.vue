@@ -2,16 +2,16 @@
   <div class="create-ticket">
     <h2>新建工单</h2>
     
-    <el-form :model="form" label-width="100px" style="max-width: 600px">
-      <el-form-item label="工单标题" required>
-        <el-input v-model="form.title" placeholder="【系统名称+问题现象】" maxlength="20" show-word-limit />
+    <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" style="max-width: 600px">
+      <el-form-item label="工单标题" prop="title">
+        <el-input v-model="form.title" placeholder="【系统名称+问题现象】" maxlength="50" show-word-limit />
       </el-form-item>
       
-      <el-form-item label="问题描述" required>
+      <el-form-item label="问题描述" prop="description">
         <el-input v-model="form.description" type="textarea" :rows="5" placeholder="请详细描述故障现象、影响范围、复现步骤" />
       </el-form-item>
       
-      <el-form-item label="优先级" required>
+      <el-form-item label="优先级" prop="priority">
         <el-radio-group v-model="form.priority">
           <el-radio-button label="P0">
             <span style="color: #f56c6c">紧急</span>
@@ -24,14 +24,14 @@
         </el-radio-group>
       </el-form-item>
       
-      <el-form-item label="负责人" required>
-        <el-select v-model="form.assignee" placeholder="请选择负责人">
+      <el-form-item label="负责人" prop="assigneeId">
+        <el-select v-model="form.assigneeId" placeholder="请选择负责人" style="width: 100%">
           <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.id" />
         </el-select>
       </el-form-item>
       
       <el-form-item>
-        <el-button type="primary" @click="handleSubmit">提交工单</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="loading">提交工单</el-button>
         <el-button @click="$router.back()">取消</el-button>
       </el-form-item>
     </el-form>
@@ -42,17 +42,26 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ticketApi, userApi } from '../api/ticket'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type FormInstance } from 'element-plus'
 
 const router = useRouter()
+const formRef = ref<FormInstance>()
 const users = ref([])
+const loading = ref(false)
 
 const form = reactive({
   title: '',
   description: '',
   priority: 'P2',
-  assignee: ''
+  assigneeId: null as number | null
 })
+
+const rules = {
+  title: [{ required: true, message: '请输入工单标题', trigger: 'blur' }],
+  description: [{ required: true, message: '请输入问题描述', trigger: 'blur' }],
+  priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
+  assigneeId: [{ required: true, message: '请选择负责人', trigger: 'change' }]
+}
 
 onMounted(() => {
   loadUsers()
@@ -60,21 +69,36 @@ onMounted(() => {
 
 async function loadUsers() {
   try {
-    const { data } = await userApi.getUsers()
-    users.value = data
+    const { data: res } = await userApi.getUsers()
+    if (res.code === 200) {
+      users.value = res.data
+    }
   } catch (error) {
     console.error('Failed to load users:', error)
   }
 }
 
 async function handleSubmit() {
-  try {
-    await ticketApi.create(form)
-    ElMessage.success('工单创建成功')
-    router.push('/tickets')
-  } catch (error) {
-    ElMessage.error('创建失败')
-  }
+  if (!formRef.value) return
+  
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    loading.value = true
+    try {
+      const { data: res } = await ticketApi.create(form)
+      if (res.code === 200) {
+        ElMessage.success('工单创建成功')
+        router.push('/tickets')
+      } else {
+        ElMessage.error(res.message || '创建失败')
+      }
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '创建失败')
+    } finally {
+      loading.value = false
+    }
+  })
 }
 </script>
 

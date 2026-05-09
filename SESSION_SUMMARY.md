@@ -277,3 +277,90 @@ docker-compose up -d --build
 ---
 
 *最后更新: 2025-05-09*
+
+---
+
+## 🆕 2025-05-09 更新
+
+### 后端 Service 层完善
+
+#### 新增文件
+- ✅ `service/AuthService.java` - 认证服务接口
+- ✅ `service/TicketService.java` - 工单服务接口
+- ✅ `service/ReplyService.java` - 回复服务接口
+- ✅ `service/UserService.java` - 用户服务接口
+- ✅ `service/impl/AuthServiceImpl.java` - 认证服务实现
+- ✅ `service/impl/TicketServiceImpl.java` - 工单服务实现
+- ✅ `service/impl/ReplyServiceImpl.java` - 回复服务实现
+- ✅ `service/impl/UserServiceImpl.java` - 用户服务实现
+
+### JWT 认证实现
+
+#### 新增文件
+- ✅ `util/JwtUtil.java` - JWT 工具类
+- ✅ `util/PasswordUtil.java` - 密码加密工具
+- ✅ `config/WebMvcConfig.java` - Web 配置
+- ✅ `interceptor/AuthInterceptor.java` - 认证拦截器
+- ✅ `controller/AuthController.java` - 认证控制器
+- ✅ `controller/StatsController.java` - 统计控制器
+- ✅ `controller/UserController.java` - 用户控制器
+
+#### DTO 类
+- ✅ `dto/LoginRequest.java` - 登录请求
+- ✅ `dto/LoginResponse.java` - 登录响应
+- ✅ `dto/TicketCreateRequest.java` - 创建工单请求
+- ✅ `dto/ReplyRequest.java` - 回复请求
+
+### 前端优化
+
+#### 更新文件
+- ✅ `Login.vue` - 添加 loading 状态和错误处理
+- ✅ `TicketList.vue` - 优化筛选和搜索功能
+- ✅ `Dashboard.vue` - 改进数据加载和空状态处理
+- ✅ `CreateTicket.vue` - 添加表单验证
+- ✅ `TicketDetail.vue` - **新建** 工单详情页
+- ✅ `Kanban.vue` - 优化交互体验
+- ✅ `Statistics.vue` - 改进数据展示
+- ✅ `main.ts` - 配置 Element Plus 中文语言包
+
+### 功能完善
+
+| 功能 | 之前 | 现在 |
+|------|------|------|
+| 登录认证 | ❌ 未实现 | ✅ JWT 完整实现 |
+| 权限控制 | ❌ 无 | ✅ 角色权限验证 |
+| 工单详情 | ❌ 缺失 | ✅ 完整实现 |
+| 回复功能 | ❌ 缺失 | ✅ 完整实现 |
+| 状态流转 | ⚠️ 简单实现 | ✅ 权限验证 |
+| 表单验证 | ❌ 无 | ✅ 完整验证 |
+| 错误处理 | ❌ 无 | ✅ 统一处理 |
+
+### API 接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/auth/login` | POST | 用户登录 |
+| `/api/auth/validate` | GET | 验证 Token |
+| `/api/tickets` | GET | 获取工单列表 |
+| `/api/tickets/:id` | GET | 获取工单详情 |
+| `/api/tickets` | POST | 创建工单 |
+| `/api/tickets/:id/status` | PATCH | 更新工单状态 |
+| `/api/tickets/:id/replies` | GET | 获取回复列表 |
+| `/api/tickets/:id/replies` | POST | 添加回复 |
+| `/api/tickets/kanban` | GET | 获取看板数据 |
+| `/api/stats` | GET | 获取统计数据 |
+| `/api/users` | GET | 获取用户列表 |
+
+### 角色权限矩阵
+
+| 操作 | 普通员工 | 技术负责人 | 管理员 |
+|------|----------|------------|--------|
+| 创建工单 | ✅ | ✅ | ✅ |
+| 查看自己的工单 | ✅ | ✅ | ✅ |
+| 查看所有工单 | ❌ | ✅ | ✅ |
+| 接单处理 | ❌ | ✅ | ✅ |
+| 标记解决 | ❌ | ✅ | ✅ |
+| 关闭工单 | ✅ (仅自己) | ✅ | ✅ |
+| 添加内部备注 | ❌ | ✅ | ✅ |
+| 查看统计报表 | ❌ | ✅ | ✅ |
+

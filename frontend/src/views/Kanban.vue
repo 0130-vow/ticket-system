@@ -2,7 +2,7 @@
   <div class="kanban">
     <h2>看板视图</h2>
     
-    <div class="kanban-board">
+    <div class="kanban-board" v-loading="loading">
       <div v-for="status in statuses" :key="status.key" class="kanban-column">
         <div class="column-header" :style="{ borderColor: status.color }">
           <span>{{ status.label }}</span>
@@ -10,19 +10,20 @@
         </div>
         
         <div class="column-body">
-          <el-card v-for="ticket in getTicketsByStatus(status.key)" :key="ticket.id" class="ticket-card" shadow="hover">
+          <el-card v-for="ticket in getTicketsByStatus(status.key)" :key="ticket.id" class="ticket-card" shadow="hover" @click="viewTicket(ticket.id)">
             <div class="ticket-header">
               <el-tag :type="getPriorityType(ticket.priority)" size="small">
                 {{ ticket.priority }}
               </el-tag>
-              <span class="ticket-id">{{ ticket.id }}</span>
+              <span class="ticket-id">#{{ ticket.id }}</span>
             </div>
             <div class="ticket-title">{{ ticket.title }}</div>
             <div class="ticket-footer">
-              <span class="assignee">{{ ticket.assignee }}</span>
-              <el-button size="small" text @click="viewTicket(ticket.id)">详情</el-button>
+              <span class="assignee">负责人: {{ ticket.assigneeId || '未分配' }}</span>
+              <span class="time">{{ formatDate(ticket.createdAt) }}</span>
             </div>
           </el-card>
+          <el-empty v-if="getTicketsByStatus(status.key).length === 0" description="暂无工单" :image-size="60" />
         </div>
       </div>
     </div>
@@ -36,6 +37,7 @@ import { ticketApi } from '../api/ticket'
 
 const router = useRouter()
 const tickets = ref([])
+const loading = ref(false)
 
 const statuses = [
   { key: 'pending', label: '待处理', color: '#909399' },
@@ -49,11 +51,16 @@ onMounted(() => {
 })
 
 async function loadKanbanData() {
+  loading.value = true
   try {
-    const { data } = await ticketApi.getKanbanData()
-    tickets.value = data
+    const { data: res } = await ticketApi.getKanbanData()
+    if (res.code === 200) {
+      tickets.value = res.data
+    }
   } catch (error) {
     console.error('Failed to load kanban data:', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -62,17 +69,17 @@ function getTicketsByStatus(status: string) {
 }
 
 function getPriorityType(priority: string) {
-  const types: Record<string, string> = {
-    P0: 'danger',
-    P1: 'warning',
-    P2: '',
-    P3: 'info'
-  }
+  const types: Record<string, string> = { P0: 'danger', P1: 'warning', P2: '', P3: 'info' }
   return types[priority] || ''
 }
 
 function viewTicket(id: string) {
   router.push(`/tickets/${id}`)
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('zh-CN')
 }
 </script>
 
@@ -87,10 +94,11 @@ h2 {
   display: flex;
   gap: 20px;
   overflow-x: auto;
+  min-height: calc(100vh - 200px);
 }
 .kanban-column {
   flex: 1;
-  min-width: 250px;
+  min-width: 280px;
   background: #f5f7fa;
   border-radius: 8px;
   padding: 15px;
@@ -111,6 +119,10 @@ h2 {
 }
 .ticket-card {
   cursor: pointer;
+  transition: transform 0.2s;
+}
+.ticket-card:hover {
+  transform: translateY(-2px);
 }
 .ticket-header {
   display: flex;

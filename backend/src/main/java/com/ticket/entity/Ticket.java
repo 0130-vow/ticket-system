@@ -30,39 +30,3 @@ public class Ticket {
     
     private LocalDateTime closedAt;
 }
-
-@Data
-@TableName("ticket_reply")
-class TicketReply {
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
-    
-    private Long ticketId;
-    
-    private String content;
-    
-    private Long authorId;
-    
-    private Boolean isInternal;
-    
-    private LocalDateTime createdAt;
-}
-
-@Data
-@TableName("sys_user")
-class User {
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
-    
-    private String username;
-    
-    private String password;
-    
-    private String name;
-    
-    private String role;  // employee, technician, admin
-    
-    private String department;
-    
-    private LocalDateTime createdAt;
-}

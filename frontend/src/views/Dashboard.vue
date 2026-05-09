@@ -43,7 +43,7 @@
           <template #header>
             <span>待我处理</span>
           </template>
-          <el-table :data="myTickets" style="width: 100%" max-height="300">
+          <el-table :data="myTickets" style="width: 100%" max-height="300" v-loading="loading">
             <el-table-column prop="id" label="工单号" width="100" />
             <el-table-column prop="title" label="标题" />
             <el-table-column prop="priority" label="优先级" width="80">
@@ -59,6 +59,7 @@
               </template>
             </el-table-column>
           </el-table>
+          <el-empty v-if="!loading && myTickets.length === 0" description="暂无待处理工单" />
         </el-card>
       </el-col>
       
@@ -67,7 +68,7 @@
           <template #header>
             <span>我提交的工单</span>
           </template>
-          <el-table :data="createdTickets" style="width: 100%" max-height="300">
+          <el-table :data="createdTickets" style="width: 100%" max-height="300" v-loading="loading">
             <el-table-column prop="id" label="工单号" width="100" />
             <el-table-column prop="title" label="标题" />
             <el-table-column prop="status" label="状态" width="80">
@@ -83,6 +84,7 @@
               </template>
             </el-table-column>
           </el-table>
+          <el-empty v-if="!loading && createdTickets.length === 0" description="暂无工单" />
         </el-card>
       </el-col>
     </el-row>
@@ -103,19 +105,32 @@ const stats = ref({
 
 const myTickets = ref([])
 const createdTickets = ref([])
+const loading = ref(false)
 
 onMounted(() => {
   loadDashboardData()
 })
 
 async function loadDashboardData() {
+  loading.value = true
   try {
-    const { data } = await ticketApi.getStats()
-    stats.value = data.stats
-    myTickets.value = data.myTickets || []
-    createdTickets.value = data.createdTickets || []
+    const { data: res } = await ticketApi.getStats()
+    if (res.code === 200 || res.statusDistribution) {
+      // 兼容两种响应格式
+      const data = res.data || res
+      stats.value = {
+        pending: data.statusDistribution?.pending || 0,
+        processing: data.statusDistribution?.processing || 0,
+        resolved: data.statusDistribution?.resolved || 0,
+        overdue: data.metrics?.overdueRate || 0
+      }
+      myTickets.value = data.myTickets || []
+      createdTickets.value = data.createdTickets || []
+    }
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
+  } finally {
+    loading.value = false
   }
 }
 

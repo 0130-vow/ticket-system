@@ -2,21 +2,26 @@
   <div class="statistics">
     <h2>统计报表</h2>
     
-    <el-row :gutter="20">
+    <el-row :gutter="20" v-loading="loading">
       <el-col :span="12">
         <el-card>
           <template #header>
             <span>工单状态分布</span>
           </template>
-          <div class="chart-placeholder">
-            <!-- 这里可以集成 ECharts -->
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="待处理">{{ stats.pending }}</el-descriptions-item>
-              <el-descriptions-item label="处理中">{{ stats.processing }}</el-descriptions-item>
-              <el-descriptions-item label="已解决">{{ stats.resolved }}</el-descriptions-item>
-              <el-descriptions-item label="已关闭">{{ stats.closed }}</el-descriptions-item>
-            </el-descriptions>
-          </div>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="待处理">
+              <el-tag type="info">{{ stats.pending }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="处理中">
+              <el-tag>{{ stats.processing }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="已解决">
+              <el-tag type="success">{{ stats.resolved }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="已关闭">
+              <el-tag type="info">{{ stats.closed }}</el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
         </el-card>
       </el-col>
       
@@ -62,7 +67,7 @@
             <el-table-column prop="pending" label="待处理" />
             <el-table-column label="解决率">
               <template #default="{ row }">
-                {{ row.total > 0 ? ((row.resolved / row.total) * 100).toFixed(1) : 0 }}%
+                <el-progress :percentage="row.total > 0 ? Math.round((row.resolved / row.total) * 100) : 0" />
               </template>
             </el-table-column>
           </el-table>
@@ -91,19 +96,26 @@ const metrics = ref({
 })
 
 const assigneeStats = ref([])
+const loading = ref(false)
 
 onMounted(() => {
   loadStats()
 })
 
 async function loadStats() {
+  loading.value = true
   try {
-    const { data } = await ticketApi.getStats()
-    stats.value = data.statusDistribution || {}
-    metrics.value = data.metrics || {}
-    assigneeStats.value = data.assigneeStats || []
+    const { data: res } = await ticketApi.getStats()
+    if (res.code === 200) {
+      const data = res.data
+      stats.value = data.statusDistribution || {}
+      metrics.value = data.metrics || {}
+      assigneeStats.value = data.assigneeStats || []
+    }
   } catch (error) {
     console.error('Failed to load stats:', error)
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -114,8 +126,5 @@ async function loadStats() {
 }
 h2 {
   margin-bottom: 20px;
-}
-.chart-placeholder {
-  height: 300px;
 }
 </style>
