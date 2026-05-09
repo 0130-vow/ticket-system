@@ -1,0 +1,28 @@
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+target/
+*.jar
+*.war
+
+# Node
+node_modules/
+dist/
+
+# Logs
+*.log
+
+# Docker
+.docker/
+
+# Environment
+.env
+.env.local
