@@ -15,6 +15,19 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// 响应拦截器
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const userStore = useUserStore()
+      userStore.logout()
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
 // 工单相关接口
 export const ticketApi = {
   // 获取工单列表

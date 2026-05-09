@@ -2,18 +2,20 @@ package com.ticket.controller;
 
 import com.ticket.dto.ReplyRequest;
 import com.ticket.dto.TicketCreateRequest;
+import com.ticket.dto.TicketDetailResponse;
 import com.ticket.entity.Ticket;
 import com.ticket.entity.TicketReply;
+import com.ticket.entity.User;
 import com.ticket.service.ReplyService;
 import com.ticket.service.TicketService;
+import com.ticket.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tickets")
@@ -25,6 +27,9 @@ public class TicketController {
     
     @Autowired
     private ReplyService replyService;
+    
+    @Autowired
+    private UserService userService;
 
     @GetMapping
     public Map<String, Object> list(
@@ -42,13 +47,37 @@ public class TicketController {
     public Map<String, Object> detail(@PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
         Ticket ticket = ticketService.getTicketById(id);
-        if (ticket != null) {
-            result.put("code", 200);
-            result.put("data", ticket);
-        } else {
+        
+        if (ticket == null) {
             result.put("code", 404);
             result.put("message", "工单不存在");
+            return result;
         }
+        
+        // 获取相关用户信息
+        Set<Long> userIds = new HashSet<>();
+        userIds.add(ticket.getCreatorId());
+        if (ticket.getAssigneeId() != null) {
+            userIds.add(ticket.getAssigneeId());
+        }
+        
+        // 构建用户信息映射
+        Map<Long, TicketDetailResponse.UserBrief> userMap = new HashMap<>();
+        for (Long userId : userIds) {
+            User user = userService.findById(userId);
+            if (user != null) {
+                userMap.put(userId, TicketDetailResponse.UserBrief.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .role(user.getRole())
+                        .department(user.getDepartment())
+                        .build());
+            }
+        }
+        
+        result.put("code", 200);
+        result.put("data", ticket);
+        result.put("userMap", userMap);
         return result;
     }
 
@@ -104,11 +133,30 @@ public class TicketController {
         if ("employee".equals(role)) {
             replies = replies.stream()
                     .filter(r -> !r.getIsInternal())
-                    .toList();
+                    .collect(Collectors.toList());
+        }
+        
+        // 获取回复用户信息
+        Set<Long> authorIds = replies.stream()
+                .map(TicketReply::getAuthorId)
+                .collect(Collectors.toSet());
+        
+        Map<Long, TicketDetailResponse.UserBrief> userMap = new HashMap<>();
+        for (Long authorId : authorIds) {
+            User user = userService.findById(authorId);
+            if (user != null) {
+                userMap.put(authorId, TicketDetailResponse.UserBrief.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .role(user.getRole())
+                        .department(user.getDepartment())
+                        .build());
+            }
         }
         
         result.put("code", 200);
         result.put("data", replies);
+        result.put("userMap", userMap);
         return result;
     }
 
