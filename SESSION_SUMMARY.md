@@ -415,3 +415,71 @@ docker-compose up -d --build
 
 *本规则于 2025-05-09 制定*
 
+---
+
+## 🆕 2026-05-11 更新 - P0 功能完善
+
+### 后端增强
+
+#### 全局异常处理
+- ✅ `GlobalExceptionHandler.java` - 统一异常处理
+  - 参数验证异常处理
+  - 约束违反异常处理
+  - 业务异常处理
+  - 友好错误提示
+
+#### 分页功能
+- ✅ `PageResponse.java` - 分页响应 DTO
+  - 支持 records/total/page/size/pages 字段
+  - 支持 hasNext/hasPrevious 分页标识
+
+#### 数据验证增强
+- ✅ `TicketCreateRequest.java` - 增强验证
+  - 标题长度限制 (2-50字)
+  - 描述长度限制 (10-2000字)
+  - XSS 防护 (特殊字符过滤)
+  - 优先级枚举验证
+
+#### 搜索增强
+- ✅ `TicketController.java` - 新增搜索参数
+  - 按提交人搜索 (creatorId)
+  - 按负责人搜索 (assigneeId)
+  - 按时间范围筛选 (startDate/endDate)
+  - 分页查询支持
+
+### 前端增强
+
+#### 工单列表优化
+- ✅ `TicketList.vue` - 搜索功能增强
+  - 添加负责人筛选下拉框
+  - 添加提交人筛选下拉框
+  - 添加时间范围选择器
+  - 关键词高亮显示
+  - 搜索/重置按钮
+  - 用户名称显示优化
+
+#### 其他优化
+- ✅ `CreateTicket.vue` - 表单验证增强
+- ✅ `ticket.ts` - API 接口完善
+- ✅ `vite.config.ts` - 构建配置优化
+
+### 功能状态更新
+
+| 功能 | 之前 | 现在 |
+|------|------|------|
+| 数据验证 | ❌ 无 | ✅ 完整验证 |
+| 错误处理 | ❌ 无 | ✅ 全局处理 |
+| 分页功能 | ❌ 无 | ✅ 后端支持 |
+| 搜索增强 | ⚠️ 基础 | ✅ 完整筛选 |
+
+### API 变更
+
+| 接口 | 变更 |
+|------|------|
+| `GET /api/tickets` | 新增分页参数 (page/size) |
+| `GET /api/tickets` | 新增筛选参数 (creatorId/assigneeId/startDate/endDate) |
+
+---
+
+*最后更新: 2026-05-11*
+
