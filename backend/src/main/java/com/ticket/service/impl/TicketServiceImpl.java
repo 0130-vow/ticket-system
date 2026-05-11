@@ -1,6 +1,8 @@
 package com.ticket.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ticket.dto.PageResponse;
 import com.ticket.dto.TicketCreateRequest;
 import com.ticket.entity.Ticket;
 import com.ticket.mapper.TicketMapper;
@@ -9,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,6 +22,43 @@ public class TicketServiceImpl implements TicketService {
 
     @Autowired
     private TicketMapper ticketMapper;
+
+    @Override
+    public PageResponse<Ticket> getTicketList(String status, String priority, String keyword,
+                                               Long creatorId, Long assigneeId,
+                                               String startDate, String endDate,
+                                               Integer page, Integer size) {
+        // 默认值处理
+        if (page == null || page < 1) page = 1;
+        if (size == null || size < 1) size = 10;
+        if (size > 50) size = 50;
+
+        // 构建查询条件
+        LambdaQueryWrapper<Ticket> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(status != null && !status.isEmpty(), Ticket::getStatus, status)
+               .eq(priority != null && !priority.isEmpty(), Ticket::getPriority, priority)
+               .like(keyword != null && !keyword.isEmpty(), Ticket::getTitle, keyword)
+               .eq(creatorId != null, Ticket::getCreatorId, creatorId)
+               .eq(assigneeId != null, Ticket::getAssigneeId, assigneeId)
+               .ge(startDate != null && !startDate.isEmpty(), Ticket::getCreatedAt, startDate + " 00:00:00")
+               .le(endDate != null && !endDate.isEmpty(), Ticket::getCreatedAt, endDate + " 23:59:59")
+               .orderByDesc(Ticket::getCreatedAt);
+
+        // 执行分页查询
+        Page<Ticket> pageParam = new Page<>(page, size);
+        Page<Ticket> result = ticketMapper.selectPage(pageParam, wrapper);
+
+        // 构建分页响应
+        return PageResponse.<Ticket>builder()
+                .records(result.getRecords())
+                .total(result.getTotal())
+                .page(result.getCurrent())
+                .size(result.getSize())
+                .pages(result.getPages())
+                .hasNext(result.getCurrent() < result.getPages())
+                .hasPrevious(result.getCurrent() > 1)
+                .build();
+    }
 
     @Override
     public List<Ticket> getTicketList(String status, String priority, String keyword) {

@@ -56,9 +56,45 @@ const form = reactive({
   assigneeId: null as number | null
 })
 
+// XSS 防护：过滤特殊字符
+function sanitizeInput(value: string) {
+  return value
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+}
+
+const validateTitle = (rule: any, value: string, callback: any) => {
+  if (!value) {
+    callback(new Error('请输入工单标题'))
+  } else if (value.length < 2) {
+    callback(new Error('标题至少2个字符'))
+  } else if (value.length > 50) {
+    callback(new Error('标题最多50个字符'))
+  } else if (/[<>\"'&]/.test(value)) {
+    callback(new Error('标题包含非法字符'))
+  } else {
+    callback()
+  }
+}
+
+const validateDescription = (rule: any, value: string, callback: any) => {
+  if (!value) {
+    callback(new Error('请输入问题描述'))
+  } else if (value.length < 10) {
+    callback(new Error('问题描述至少10个字符'))
+  } else if (value.length > 2000) {
+    callback(new Error('问题描述最多2000个字符'))
+  } else {
+    callback()
+  }
+}
+
 const rules = {
-  title: [{ required: true, message: '请输入工单标题', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入问题描述', trigger: 'blur' }],
+  title: [{ validator: validateTitle, trigger: 'blur' }],
+  description: [{ validator: validateDescription, trigger: 'blur' }],
   priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
   assigneeId: [{ required: true, message: '请选择负责人', trigger: 'change' }]
 }
@@ -86,7 +122,13 @@ async function handleSubmit() {
     
     loading.value = true
     try {
-      const { data: res } = await ticketApi.create(form)
+      // 提交前清理输入，防止 XSS
+      const submitData = {
+        ...form,
+        title: sanitizeInput(form.title),
+        description: sanitizeInput(form.description)
+      }
+      const { data: res } = await ticketApi.create(submitData)
       if (res.code === 200) {
         ElMessage.success('工单创建成功')
         router.push('/tickets')

@@ -1,5 +1,6 @@
 package com.ticket.service;
 
+import com.ticket.dto.PageResponse;
 import com.ticket.dto.TicketCreateRequest;
 import com.ticket.entity.Ticket;
 
@@ -7,9 +8,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface TicketService {
-    
+
     /**
-     * 获取工单列表
+     * 获取工单列表（分页）
+     */
+    PageResponse<Ticket> getTicketList(String status, String priority, String keyword,
+                                       Long creatorId, Long assigneeId,
+                                       String startDate, String endDate,
+                                       Integer page, Integer size);
+
+    /**
+     * 获取工单列表（兼容旧接口）
      */
     List<Ticket> getTicketList(String status, String priority, String keyword);
     

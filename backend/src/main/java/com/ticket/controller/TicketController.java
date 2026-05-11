@@ -1,5 +1,6 @@
 package com.ticket.controller;
 
+import com.ticket.dto.PageResponse;
 import com.ticket.dto.ReplyRequest;
 import com.ticket.dto.TicketCreateRequest;
 import com.ticket.dto.TicketDetailResponse;
@@ -31,15 +32,35 @@ public class TicketController {
     @Autowired
     private UserService userService;
 
+    /**
+     * 获取工单列表（分页）
+     */
     @GetMapping
     public Map<String, Object> list(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long creatorId,
+            @RequestParam(required = false) Long assigneeId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         Map<String, Object> result = new HashMap<>();
-        List<Ticket> tickets = ticketService.getTicketList(status, priority, keyword);
-        result.put("code", 200);
-        result.put("data", tickets);
+
+        // 如果有分页参数，返回分页数据
+        if (page != null || size != null) {
+            PageResponse<Ticket> pageData = ticketService.getTicketList(
+                    status, priority, keyword, creatorId, assigneeId,
+                    startDate, endDate, page, size);
+            result.put("code", 200);
+            result.put("data", pageData);
+        } else {
+            // 兼容旧接口，返回全部数据
+            List<Ticket> tickets = ticketService.getTicketList(status, priority, keyword);
+            result.put("code", 200);
+            result.put("data", tickets);
+        }
         return result;
     }
 
