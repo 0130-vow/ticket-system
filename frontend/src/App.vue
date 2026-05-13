@@ -72,7 +72,7 @@ function handleCommand(command: string) {
 }
 
 // 全局错误处理
-onErrorCaptured((err, instance, info) => {
+onErrorCaptured((err, _, info) => {
   console.error('Global error captured:', err, info)
   ElMessage.error('发生了一个错误，请稍后重试')
   return false

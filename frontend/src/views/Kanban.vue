@@ -34,9 +34,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ticketApi } from '../api/ticket'
+import { type Ticket } from '../types/ticket'
 
 const router = useRouter()
-const tickets = ref([])
+const tickets = ref<Ticket[]>([])
 const loading = ref(false)
 
 const statuses = [

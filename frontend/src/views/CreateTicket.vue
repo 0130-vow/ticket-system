@@ -42,11 +42,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ticketApi, userApi } from '../api/ticket'
+import { type User } from '../types/ticket'
 import { ElMessage, type FormInstance } from 'element-plus'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
-const users = ref([])
+const users = ref<User[]>([])
 const loading = ref(false)
 
 const form = reactive({
@@ -66,7 +67,7 @@ function sanitizeInput(value: string) {
     .replace(/\//g, '&#x2F;')
 }
 
-const validateTitle = (rule: any, value: string, callback: any) => {
+const validateTitle = (_: any, value: string, callback: any) => {
   if (!value) {
     callback(new Error('请输入工单标题'))
   } else if (value.length < 2) {
@@ -80,7 +81,7 @@ const validateTitle = (rule: any, value: string, callback: any) => {
   }
 }
 
-const validateDescription = (rule: any, value: string, callback: any) => {
+const validateDescription = (_: any, value: string, callback: any) => {
   if (!value) {
     callback(new Error('请输入问题描述'))
   } else if (value.length < 10) {

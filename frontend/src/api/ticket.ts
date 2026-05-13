@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { useUserStore } from '../stores/user'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 const api = axios.create({
   baseURL: 'http://localhost:8080/api',

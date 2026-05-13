@@ -286,12 +286,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ticketApi } from '../api/ticket'
 import { useUserStore } from '../stores/user'
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types/ticket'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
+import {
   ArrowLeft, Refresh, Document, ChatDotRound, EditPen, Promotion,
   InfoFilled, Operation, Clock, VideoPlay, Select, Back, CircleCheck,
   RefreshLeft, RefreshRight, QuestionFilled
@@ -305,7 +305,6 @@ interface UserBrief {
 }
 
 const route = useRoute()
-const router = useRouter()
 const userStore = useUserStore()
 
 const ticket = ref<any>({})

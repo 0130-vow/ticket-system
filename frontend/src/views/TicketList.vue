@@ -129,16 +129,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Close, Delete } from '@element-plus/icons-vue'
 import { ticketApi, userApi } from '../api/ticket'
-import { STATUS_CONFIG } from '../types/ticket'
+import { STATUS_CONFIG, type Ticket, type User } from '../types/ticket'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const tickets = ref([])
-const users = ref([])
+const tickets = ref<Ticket[]>([])
+const users = ref<User[]>([])
 const loading = ref(false)
 
 const filters = reactive({
