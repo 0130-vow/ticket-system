@@ -52,9 +52,9 @@ public class TicketServiceImpl implements TicketService {
         return PageResponse.<Ticket>builder()
                 .records(result.getRecords())
                 .total(result.getTotal())
-                .page(result.getCurrent())
-                .size(result.getSize())
-                .pages(result.getPages())
+                .page((int) result.getCurrent())
+                .size((int) result.getSize())
+                .pages((int) result.getPages())
                 .hasNext(result.getCurrent() < result.getPages())
                 .hasPrevious(result.getCurrent() > 1)
                 .build();
