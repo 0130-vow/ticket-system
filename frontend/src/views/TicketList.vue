@@ -40,17 +40,32 @@
         @change="handleSearch"
       />
 
-      <el-input
+      <el-autocomplete
         v-model="filters.keyword"
+        :fetch-suggestions="querySearchHistory"
         placeholder="搜索标题..."
         clearable
         @keyup.enter="handleSearch"
-        style="width: 200px"
+        @select="handleHistorySelect"
+        style="width: 240px"
       >
         <template #prefix>
           <el-icon><Search /></el-icon>
         </template>
-      </el-input>
+        <template #default="{ item }">
+          <div class="history-item">
+            <span class="history-text">{{ item.value }}</span>
+            <el-icon class="history-delete" @click.stop="removeHistoryItem(item.value)">
+              <Close />
+            </el-icon>
+          </div>
+        </template>
+        <template #append>
+          <el-button @click="clearAllHistory" v-if="searchHistory.length > 0">
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </template>
+      </el-autocomplete>
 
       <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button @click="handleReset">重置</el-button>
@@ -116,7 +131,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Close, Delete } from '@element-plus/icons-vue'
 import { ticketApi, userApi } from '../api/ticket'
 import { STATUS_CONFIG } from '../types/ticket'
 import { ElMessage } from 'element-plus'
@@ -141,9 +156,95 @@ const pagination = reactive({
   total: 0
 })
 
+// 搜索历史
+const searchHistory = ref<string[]>([])
+const HISTORY_KEY = 'ticket_search_history'
+const MAX_HISTORY = 10
+
+// 加载搜索历史
+function loadSearchHistory() {
+  try {
+    const history = localStorage.getItem(HISTORY_KEY)
+    if (history) {
+      searchHistory.value = JSON.parse(history)
+    }
+  } catch (e) {
+    console.error('Failed to load search history:', e)
+  }
+}
+
+// 保存搜索历史
+function saveSearchHistory(keyword: string) {
+  if (!keyword.trim()) return
+
+  // 移除重复项
+  const index = searchHistory.value.indexOf(keyword)
+  if (index > -1) {
+    searchHistory.value.splice(index, 1)
+  }
+
+  // 添加到开头
+  searchHistory.value.unshift(keyword)
+
+  // 限制数量
+  if (searchHistory.value.length > MAX_HISTORY) {
+    searchHistory.value = searchHistory.value.slice(0, MAX_HISTORY)
+  }
+
+  // 保存到本地存储
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory.value))
+  } catch (e) {
+    console.error('Failed to save search history:', e)
+  }
+}
+
+// 删除单条历史
+function removeHistoryItem(keyword: string) {
+  const index = searchHistory.value.indexOf(keyword)
+  if (index > -1) {
+    searchHistory.value.splice(index, 1)
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory.value))
+    } catch (e) {
+      console.error('Failed to save search history:', e)
+    }
+  }
+}
+
+// 清空所有历史
+function clearAllHistory() {
+  searchHistory.value = []
+  try {
+    localStorage.removeItem(HISTORY_KEY)
+  } catch (e) {
+    console.error('Failed to clear search history:', e)
+  }
+}
+
+// 搜索历史查询
+function querySearchHistory(queryString: string, cb: (results: any[]) => void) {
+  const history = searchHistory.value.map(item => ({ value: item }))
+  if (queryString) {
+    const results = history.filter(item =>
+      item.value.toLowerCase().includes(queryString.toLowerCase())
+    )
+    cb(results)
+  } else {
+    cb(history)
+  }
+}
+
+// 选择历史记录
+function handleHistorySelect(item: { value: string }) {
+  filters.keyword = item.value
+  handleSearch()
+}
+
 onMounted(() => {
   loadUsers()
   loadTickets()
+  loadSearchHistory()
 })
 
 async function loadUsers() {
@@ -189,6 +290,10 @@ async function loadTickets() {
 }
 
 function handleSearch() {
+  // 保存搜索历史
+  if (filters.keyword) {
+    saveSearchHistory(filters.keyword)
+  }
   pagination.page = 1
   loadTickets()
 }
@@ -287,5 +392,35 @@ function formatDate(dateStr: string) {
   background-color: #ecf5ff;
   padding: 0 2px;
   border-radius: 2px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.history-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-delete {
+  margin-left: 8px;
+  color: #909399;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.history-item:hover .history-delete {
+  opacity: 1;
+}
+
+.history-delete:hover {
+  color: #f56c6c;
 }
 </style>

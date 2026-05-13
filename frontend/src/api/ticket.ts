@@ -122,8 +122,8 @@ export const ticketApi = {
   },
 
   // 获取回复列表
-  getReplies(ticketId: string) {
-    return api.get(`/tickets/${ticketId}/replies`)
+  getReplies(ticketId: string, params?: { page?: number; size?: number }) {
+    return api.get(`/tickets/${ticketId}/replies`, { params })
   },
 
   // 添加回复

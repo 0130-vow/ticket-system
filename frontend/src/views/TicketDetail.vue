@@ -57,18 +57,18 @@
             <div class="card-header">
               <div class="section-header">
                 <el-icon><ChatDotRound /></el-icon>
-                <span>回复记录 ({{ replies.length }})</span>
+                <span>回复记录 ({{ replyPagination.total }})</span>
               </div>
-              <el-radio-group v-model="replyFilter" size="small">
+              <el-radio-group v-model="replyFilter" size="small" @change="handleReplyFilterChange">
                 <el-radio-button label="all">全部</el-radio-button>
                 <el-radio-button label="public">公开</el-radio-button>
                 <el-radio-button label="internal" v-if="!isEmployee">内部</el-radio-button>
               </el-radio-group>
             </div>
           </template>
-          
+
           <div class="replies-list" v-if="filteredReplies.length > 0">
-            <div v-for="reply in filteredReplies" :key="reply.id" 
+            <div v-for="reply in filteredReplies" :key="reply.id"
                  :class="['reply-item', { 'internal-reply': reply.isInternal }]">
               <div class="reply-avatar">
                 <el-avatar :size="40" :style="{ backgroundColor: getAvatarColor(reply.authorId) }">
@@ -88,6 +88,19 @@
             </div>
           </div>
           <el-empty v-else description="暂无回复记录" />
+
+          <!-- 回复分页 -->
+          <div class="reply-pagination" v-if="replyPagination.total > 0">
+            <el-pagination
+              v-model:current-page="replyPagination.page"
+              v-model:page-size="replyPagination.size"
+              :page-sizes="[10, 20, 50]"
+              :total="replyPagination.total"
+              layout="total, sizes, prev, pager, next"
+              @size-change="handleReplySizeChange"
+              @current-change="handleReplyPageChange"
+            />
+          </div>
           
           <!-- 添加回复 -->
           <el-divider />
@@ -272,7 +285,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ticketApi } from '../api/ticket'
 import { useUserStore } from '../stores/user'
@@ -303,6 +316,13 @@ const submitting = ref(false)
 const newReply = ref('')
 const isInternal = ref(false)
 const replyFilter = ref('all')
+
+// 回复分页
+const replyPagination = reactive({
+  page: 1,
+  size: 20,
+  total: 0
+})
 
 // 计算属性
 const isEmployee = computed(() => userStore.userInfo?.role === 'employee')
@@ -390,9 +410,21 @@ async function loadTicket() {
 
 async function loadReplies() {
   try {
-    const { data: res } = await ticketApi.getReplies(route.params.id as string)
+    const params = {
+      page: replyPagination.page,
+      size: replyPagination.size
+    }
+    const { data: res } = await ticketApi.getReplies(route.params.id as string, params)
     if (res.code === 200) {
-      replies.value = res.data || []
+      if (res.data.records) {
+        // 分页数据
+        replies.value = res.data.records
+        replyPagination.total = res.data.total
+      } else {
+        // 兼容旧接口
+        replies.value = res.data || []
+        replyPagination.total = replies.value.length
+      }
       // 合并用户信息
       if (res.userMap) {
         userMap.value = { ...userMap.value, ...res.userMap }
@@ -406,6 +438,23 @@ async function loadReplies() {
 function refreshData() {
   loadData()
   ElMessage.success('数据已刷新')
+}
+
+function handleReplySizeChange(size: number) {
+  replyPagination.size = size
+  replyPagination.page = 1
+  loadReplies()
+}
+
+function handleReplyPageChange(page: number) {
+  replyPagination.page = page
+  loadReplies()
+}
+
+function handleReplyFilterChange() {
+  // 切换筛选时重新加载
+  replyPagination.page = 1
+  loadReplies()
 }
 
 function insertQuickReply(text: string) {
@@ -755,5 +804,13 @@ function calculateDuration(start: string, end: string) {
 
 .replies-list::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.reply-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebeef5;
 }
 </style>

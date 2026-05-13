@@ -47,6 +47,30 @@ const router = createRouter({
       name: 'Statistics',
       component: () => import('../views/Statistics.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/403',
+      name: 'Forbidden',
+      component: () => import('../components/ErrorPage.vue'),
+      props: { type: '403' }
+    },
+    {
+      path: '/500',
+      name: 'ServerError',
+      component: () => import('../components/ErrorPage.vue'),
+      props: { type: '500', showRetry: true }
+    },
+    {
+      path: '/network-error',
+      name: 'NetworkError',
+      component: () => import('../components/ErrorPage.vue'),
+      props: { type: 'network', showRetry: true }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('../components/ErrorPage.vue'),
+      props: { type: '404' }
     }
   ]
 })

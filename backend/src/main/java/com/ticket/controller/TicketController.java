@@ -145,39 +145,65 @@ public class TicketController {
     }
 
     @GetMapping("/{id}/replies")
-    public Map<String, Object> getReplies(@PathVariable Long id, HttpServletRequest httpRequest) {
+    public Map<String, Object> getReplies(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            HttpServletRequest httpRequest) {
         Map<String, Object> result = new HashMap<>();
         String role = (String) httpRequest.getAttribute("role");
-        List<TicketReply> replies = replyService.getRepliesByTicketId(id);
-        
-        // 普通员工看不到内部备注
-        if ("employee".equals(role)) {
-            replies = replies.stream()
-                    .filter(r -> !r.getIsInternal())
-                    .collect(Collectors.toList());
-        }
-        
-        // 获取回复用户信息
-        Set<Long> authorIds = replies.stream()
-                .map(TicketReply::getAuthorId)
-                .collect(Collectors.toSet());
-        
-        Map<Long, TicketDetailResponse.UserBrief> userMap = new HashMap<>();
-        for (Long authorId : authorIds) {
-            User user = userService.findById(authorId);
-            if (user != null) {
-                userMap.put(authorId, TicketDetailResponse.UserBrief.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .role(user.getRole())
-                        .department(user.getDepartment())
-                        .build());
+
+        // 获取回复用户信息的辅助方法
+        java.util.function.Function<List<TicketReply>, Map<Long, TicketDetailResponse.UserBrief>> buildUserMap = (replyList) -> {
+            Set<Long> authorIds = replyList.stream()
+                    .map(TicketReply::getAuthorId)
+                    .collect(Collectors.toSet());
+
+            Map<Long, TicketDetailResponse.UserBrief> userMapResult = new HashMap<>();
+            for (Long authorId : authorIds) {
+                User user = userService.findById(authorId);
+                if (user != null) {
+                    userMapResult.put(authorId, TicketDetailResponse.UserBrief.builder()
+                            .id(user.getId())
+                            .name(user.getName())
+                            .role(user.getRole())
+                            .department(user.getDepartment())
+                            .build());
+                }
             }
+            return userMapResult;
+        };
+
+        // 如果有分页参数，返回分页数据
+        if (page != null || size != null) {
+            PageResponse<TicketReply> pageData = replyService.getRepliesByTicketId(id, page, size);
+
+            // 普通员工看不到内部备注
+            if ("employee".equals(role)) {
+                List<TicketReply> filtered = pageData.getRecords().stream()
+                        .filter(r -> !r.getIsInternal())
+                        .collect(Collectors.toList());
+                pageData.setRecords(filtered);
+            }
+
+            result.put("code", 200);
+            result.put("data", pageData);
+            result.put("userMap", buildUserMap.apply(pageData.getRecords()));
+        } else {
+            // 兼容旧接口，返回全部数据
+            List<TicketReply> replies = replyService.getRepliesByTicketId(id);
+
+            // 普通员工看不到内部备注
+            if ("employee".equals(role)) {
+                replies = replies.stream()
+                        .filter(r -> !r.getIsInternal())
+                        .collect(Collectors.toList());
+            }
+
+            result.put("code", 200);
+            result.put("data", replies);
+            result.put("userMap", buildUserMap.apply(replies));
         }
-        
-        result.put("code", 200);
-        result.put("data", replies);
-        result.put("userMap", userMap);
         return result;
     }
 

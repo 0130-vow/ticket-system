@@ -57,6 +57,8 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from './stores/user'
 import { HomeFilled, Tickets, Grid, DataAnalysis, ArrowDown } from '@element-plus/icons-vue'
+import { onErrorCaptured } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,6 +70,24 @@ function handleCommand(command: string) {
     router.push('/login')
   }
 }
+
+// 全局错误处理
+onErrorCaptured((err, instance, info) => {
+  console.error('Global error captured:', err, info)
+  ElMessage.error('发生了一个错误，请稍后重试')
+  return false
+})
+
+// 监听未处理的 Promise 错误
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason)
+  ElMessage.error('操作失败，请稍后重试')
+})
+
+// 监听全局错误
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error)
+})
 </script>
 
 <style>
