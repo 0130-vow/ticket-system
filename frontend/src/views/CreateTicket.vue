@@ -29,6 +29,25 @@
           <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.id" />
         </el-select>
       </el-form-item>
+
+      <el-form-item label="工单分类">
+        <el-cascader
+          v-model="form.categoryId"
+          :options="categoryOptions"
+          :props="{ checkStrictly: true, value: 'id', label: 'name', children: 'children' }"
+          placeholder="请选择工单分类"
+          clearable
+          style="width: 100%"
+        />
+      </el-form-item>
+
+      <el-form-item label="标签">
+        <el-select v-model="form.tagIds" multiple placeholder="请选择标签" style="width: 100%">
+          <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id">
+            <el-tag :color="tag.color" style="color: #fff; margin-right: 8px">{{ tag.name }}</el-tag>
+          </el-option>
+        </el-select>
+      </el-form-item>
       
       <el-form-item>
         <el-button type="primary" @click="handleSubmit" :loading="loading">提交工单</el-button>
@@ -41,20 +60,24 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ticketApi, userApi } from '../api/ticket'
-import { type User } from '../types/ticket'
+import { ticketApi, userApi, categoryApi, tagApi } from '../api/ticket'
+import { type User, type Category, type Tag } from '../types/ticket'
 import { ElMessage, type FormInstance } from 'element-plus'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const users = ref<User[]>([])
+const categoryOptions = ref<Category[]>([])
+const tags = ref<Tag[]>([])
 const loading = ref(false)
 
 const form = reactive({
   title: '',
   description: '',
   priority: 'P2',
-  assigneeId: null as number | null
+  assigneeId: null as number | null,
+  categoryId: null as number | null,
+  tagIds: [] as number[]
 })
 
 // XSS 防护：过滤特殊字符
@@ -102,6 +125,8 @@ const rules = {
 
 onMounted(() => {
   loadUsers()
+  loadCategories()
+  loadTags()
 })
 
 async function loadUsers() {
@@ -112,6 +137,28 @@ async function loadUsers() {
     }
   } catch (error) {
     console.error('Failed to load users:', error)
+  }
+}
+
+async function loadCategories() {
+  try {
+    const { data: res } = await categoryApi.getList(true)
+    if (res.code === 200) {
+      categoryOptions.value = res.data
+    }
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+  }
+}
+
+async function loadTags() {
+  try {
+    const { data: res } = await tagApi.getList()
+    if (res.code === 200) {
+      tags.value = res.data
+    }
+  } catch (error) {
+    console.error('Failed to load tags:', error)
   }
 }
 
@@ -127,7 +174,11 @@ async function handleSubmit() {
       const submitData = {
         ...form,
         title: sanitizeInput(form.title),
-        description: sanitizeInput(form.description)
+        description: sanitizeInput(form.description),
+        // cascader 返回数组，取最后一个值作为最终分类ID
+        categoryId: Array.isArray(form.categoryId)
+          ? form.categoryId[form.categoryId.length - 1]
+          : form.categoryId
       }
       const { data: res } = await ticketApi.create(submitData)
       if (res.code === 200) {

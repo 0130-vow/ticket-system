@@ -6,6 +6,7 @@ import com.ticket.dto.PageResponse;
 import com.ticket.dto.TicketCreateRequest;
 import com.ticket.entity.Ticket;
 import com.ticket.mapper.TicketMapper;
+import com.ticket.service.TagService;
 import com.ticket.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,9 +24,12 @@ public class TicketServiceImpl implements TicketService {
     @Autowired
     private TicketMapper ticketMapper;
 
+    @Autowired
+    private TagService tagService;
+
     @Override
     public PageResponse<Ticket> getTicketList(String status, String priority, String keyword,
-                                               Long creatorId, Long assigneeId,
+                                               Long creatorId, Long assigneeId, Long categoryId,
                                                String startDate, String endDate,
                                                Integer page, Integer size) {
         // 默认值处理
@@ -40,6 +44,7 @@ public class TicketServiceImpl implements TicketService {
                .like(keyword != null && !keyword.isEmpty(), Ticket::getTitle, keyword)
                .eq(creatorId != null, Ticket::getCreatorId, creatorId)
                .eq(assigneeId != null, Ticket::getAssigneeId, assigneeId)
+               .eq(categoryId != null, Ticket::getCategoryId, categoryId)
                .ge(startDate != null && !startDate.isEmpty(), Ticket::getCreatedAt, startDate + " 00:00:00")
                .le(endDate != null && !endDate.isEmpty(), Ticket::getCreatedAt, endDate + " 23:59:59")
                .orderByDesc(Ticket::getCreatedAt);
@@ -84,10 +89,17 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus("pending");
         ticket.setCreatorId(creatorId);
         ticket.setAssigneeId(request.getAssigneeId());
+        ticket.setCategoryId(request.getCategoryId());
         ticket.setCreatedAt(LocalDateTime.now());
         ticket.setUpdatedAt(LocalDateTime.now());
-        
+
         ticketMapper.insert(ticket);
+
+        // 设置标签
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            tagService.setTicketTags(ticket.getId(), request.getTagIds());
+        }
+
         return ticket;
     }
 

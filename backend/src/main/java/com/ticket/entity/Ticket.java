@@ -21,7 +21,9 @@ public class Ticket {
     private Long creatorId;
     
     private Long assigneeId;
-    
+
+    private Long categoryId;
+
     private LocalDateTime createdAt;
     
     private LocalDateTime updatedAt;

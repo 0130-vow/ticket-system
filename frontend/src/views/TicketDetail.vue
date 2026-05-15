@@ -184,6 +184,17 @@
               </div>
               <el-tag v-else type="info">未分配</el-tag>
             </el-descriptions-item>
+            <el-descriptions-item label="工单分类">
+              {{ getCategoryName(ticket.categoryId) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="标签">
+              <div class="tags-container" v-if="ticketTags.length > 0">
+                <el-tag v-for="tag in ticketTags" :key="tag.id" :color="tag.color" style="color: #fff; margin-right: 8px; margin-bottom: 4px">
+                  {{ tag.name }}
+                </el-tag>
+              </div>
+              <span v-else style="color: #909399">无标签</span>
+            </el-descriptions-item>
             <el-descriptions-item label="创建时间">
               {{ formatDate(ticket.createdAt) }}
             </el-descriptions-item>
@@ -287,9 +298,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ticketApi } from '../api/ticket'
+import { ticketApi, categoryApi } from '../api/ticket'
 import { useUserStore } from '../stores/user'
-import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types/ticket'
+import { STATUS_CONFIG, PRIORITY_CONFIG, type Category, type Tag } from '../types/ticket'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft, Refresh, Document, ChatDotRound, EditPen, Promotion,
@@ -310,6 +321,8 @@ const userStore = useUserStore()
 const ticket = ref<any>({})
 const replies = ref<any[]>([])
 const userMap = ref<Record<number, UserBrief>>({})
+const categoryOptions = ref<Category[]>([])
+const ticketTags = ref<Tag[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const newReply = ref('')
@@ -384,7 +397,8 @@ async function loadData() {
   try {
     await Promise.all([
       loadTicket(),
-      loadReplies()
+      loadReplies(),
+      loadCategories()
     ])
   } finally {
     loading.value = false
@@ -400,10 +414,25 @@ async function loadTicket() {
       if (res.userMap) {
         userMap.value = { ...userMap.value, ...res.userMap }
       }
+      // 获取标签
+      if (res.tags) {
+        ticketTags.value = res.tags
+      }
     }
   } catch (error) {
     console.error('Failed to load ticket:', error)
     ElMessage.error('加载工单失败')
+  }
+}
+
+async function loadCategories() {
+  try {
+    const { data: res } = await categoryApi.getList(true)
+    if (res.code === 200) {
+      categoryOptions.value = res.data
+    }
+  } catch (error) {
+    console.error('Failed to load categories:', error)
   }
 }
 
@@ -568,12 +597,27 @@ function calculateDuration(start: string, end: string) {
   const diff = new Date(end).getTime() - new Date(start).getTime()
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  
+
   if (hours > 24) {
     const days = Math.floor(hours / 24)
     return `${days}天${hours % 24}小时`
   }
   return `${hours}小时${minutes}分钟`
+}
+
+function getCategoryName(categoryId: number | null | undefined) {
+  if (!categoryId) return '未分类'
+  const findCategory = (categories: Category[]): string => {
+    for (const cat of categories) {
+      if (cat.id === categoryId) return cat.name
+      if (cat.children) {
+        const found = findCategory(cat.children)
+        if (found) return found
+      }
+    }
+    return ''
+  }
+  return findCategory(categoryOptions.value) || '未分类'
 }
 </script>
 
@@ -811,5 +855,11 @@ function calculateDuration(start: string, end: string) {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #ebeef5;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 </style>

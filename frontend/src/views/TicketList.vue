@@ -22,6 +22,16 @@
         <el-option label="P3 低" value="P3" />
       </el-select>
 
+      <el-cascader
+        v-model="filters.categoryId"
+        :options="categoryOptions"
+        :props="{ checkStrictly: true, value: 'id', label: 'name', children: 'children' }"
+        placeholder="工单分类"
+        clearable
+        @change="handleSearch"
+        style="width: 200px"
+      />
+
       <el-select v-model="filters.assigneeId" placeholder="负责人" clearable filterable @change="handleSearch">
         <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.id" />
       </el-select>
@@ -102,6 +112,11 @@
           {{ getUserName(row.creatorId) }}
         </template>
       </el-table-column>
+      <el-table-column label="分类" width="120">
+        <template #default="{ row }">
+          {{ getCategoryName(row.categoryId) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="createdAt" label="创建时间" width="180">
         <template #default="{ row }">
           {{ formatDate(row.createdAt) }}
@@ -132,13 +147,14 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Close, Delete } from '@element-plus/icons-vue'
-import { ticketApi, userApi } from '../api/ticket'
-import { STATUS_CONFIG, type Ticket, type User } from '../types/ticket'
+import { ticketApi, userApi, categoryApi } from '../api/ticket'
+import { STATUS_CONFIG, type Ticket, type User, type Category } from '../types/ticket'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const tickets = ref<Ticket[]>([])
 const users = ref<User[]>([])
+const categoryOptions = ref<Category[]>([])
 const loading = ref(false)
 
 const filters = reactive({
@@ -147,6 +163,7 @@ const filters = reactive({
   keyword: '',
   creatorId: null as number | null,
   assigneeId: null as number | null,
+  categoryId: null as number | null,
   dateRange: null as string[] | null
 })
 
@@ -243,6 +260,7 @@ function handleHistorySelect(item: { value: string }) {
 
 onMounted(() => {
   loadUsers()
+  loadCategories()
   loadTickets()
   loadSearchHistory()
 })
@@ -255,6 +273,17 @@ async function loadUsers() {
     }
   } catch (error) {
     console.error('Failed to load users:', error)
+  }
+}
+
+async function loadCategories() {
+  try {
+    const { data: res } = await categoryApi.getList(true)
+    if (res.code === 200) {
+      categoryOptions.value = res.data
+    }
+  } catch (error) {
+    console.error('Failed to load categories:', error)
   }
 }
 
@@ -271,6 +300,7 @@ async function loadTickets() {
     if (filters.keyword) params.keyword = filters.keyword
     if (filters.creatorId) params.creatorId = filters.creatorId
     if (filters.assigneeId) params.assigneeId = filters.assigneeId
+    if (filters.categoryId) params.categoryId = filters.categoryId
     if (filters.dateRange && filters.dateRange.length === 2) {
       params.startDate = filters.dateRange[0]
       params.endDate = filters.dateRange[1]
@@ -304,6 +334,7 @@ function handleReset() {
   filters.keyword = ''
   filters.creatorId = null
   filters.assigneeId = null
+  filters.categoryId = null
   filters.dateRange = null
   pagination.page = 1
   loadTickets()
@@ -327,6 +358,21 @@ function viewTicket(id: string) {
 function getUserName(userId: number) {
   const user = users.value.find((u: any) => u.id === userId)
   return user ? user.name : userId || '-'
+}
+
+function getCategoryName(categoryId: number | null | undefined) {
+  if (!categoryId) return '-'
+  const findCategory = (categories: Category[]): string => {
+    for (const cat of categories) {
+      if (cat.id === categoryId) return cat.name
+      if (cat.children) {
+        const found = findCategory(cat.children)
+        if (found) return found
+      }
+    }
+    return ''
+  }
+  return findCategory(categoryOptions.value) || '-'
 }
 
 function highlightKeyword(text: string) {

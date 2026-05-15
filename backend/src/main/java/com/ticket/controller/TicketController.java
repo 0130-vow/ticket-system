@@ -8,6 +8,7 @@ import com.ticket.entity.Ticket;
 import com.ticket.entity.TicketReply;
 import com.ticket.entity.User;
 import com.ticket.service.ReplyService;
+import com.ticket.service.TagService;
 import com.ticket.service.TicketService;
 import com.ticket.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,9 @@ public class TicketController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private TagService tagService;
+
     /**
      * 获取工单列表（分页）
      */
@@ -42,6 +46,7 @@ public class TicketController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long creatorId,
             @RequestParam(required = false) Long assigneeId,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) Integer page,
@@ -51,7 +56,7 @@ public class TicketController {
         // 如果有分页参数，返回分页数据
         if (page != null || size != null) {
             PageResponse<Ticket> pageData = ticketService.getTicketList(
-                    status, priority, keyword, creatorId, assigneeId,
+                    status, priority, keyword, creatorId, assigneeId, categoryId,
                     startDate, endDate, page, size);
             result.put("code", 200);
             result.put("data", pageData);
@@ -68,13 +73,17 @@ public class TicketController {
     public Map<String, Object> detail(@PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
         Ticket ticket = ticketService.getTicketById(id);
-        
+
         if (ticket == null) {
             result.put("code", 404);
             result.put("message", "工单不存在");
             return result;
         }
-        
+
+        // 获取工单标签
+        List<Tag> tags = tagService.getTagsByTicketId(id);
+        result.put("tags", tags);
+
         // 获取相关用户信息
         Set<Long> userIds = new HashSet<>();
         userIds.add(ticket.getCreatorId());

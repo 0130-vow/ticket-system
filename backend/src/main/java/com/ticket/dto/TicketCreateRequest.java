@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class TicketCreateRequest {
 
@@ -24,4 +26,8 @@ public class TicketCreateRequest {
 
     @NotNull(message = "负责人不能为空")
     private Long assigneeId;
+
+    private Long categoryId;
+
+    private List<Long> tagIds;
 }

@@ -13,7 +13,7 @@ public interface TicketService {
      * 获取工单列表（分页）
      */
     PageResponse<Ticket> getTicketList(String status, String priority, String keyword,
-                                       Long creatorId, Long assigneeId,
+                                       Long creatorId, Long assigneeId, Long categoryId,
                                        String startDate, String endDate,
                                        Integer page, Integer size);
 

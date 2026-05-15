@@ -16,10 +16,29 @@ export interface Ticket {
   status: TicketStatus
   creatorId: number
   assigneeId: number
+  categoryId?: number
   createdAt: string
   updatedAt: string
   resolvedAt?: string
   closedAt?: string
+}
+
+// 工单分类
+export interface Category {
+  id: number
+  name: string
+  parentId: number
+  level: number
+  sortOrder: number
+  status: number
+  children?: Category[]
+}
+
+// 工单标签
+export interface Tag {
+  id: number
+  name: string
+  color: string
 }
 
 // 回复

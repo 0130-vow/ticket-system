@@ -152,3 +152,54 @@ export const userApi = {
     return api.get('/users')
   }
 }
+
+// 分类相关接口
+export const categoryApi = {
+  // 获取分类列表
+  getList(tree?: boolean) {
+    return api.get('/categories', { params: { tree } })
+  },
+
+  // 获取分类详情
+  getDetail(id: number) {
+    return api.get(`/categories/${id}`)
+  },
+
+  // 创建分类
+  create(data: { name: string; parentId?: number; sortOrder?: number }) {
+    return api.post('/categories', data)
+  },
+
+  // 更新分类
+  update(id: number, data: { name: string; parentId?: number; sortOrder?: number; status?: number }) {
+    return api.put(`/categories/${id}`, data)
+  },
+
+  // 删除分类
+  delete(id: number) {
+    return api.delete(`/categories/${id}`)
+  }
+}
+
+// 标签相关接口
+export const tagApi = {
+  // 获取标签列表
+  getList() {
+    return api.get('/tags')
+  },
+
+  // 创建标签
+  create(data: { name: string; color?: string }) {
+    return api.post('/tags', data)
+  },
+
+  // 更新标签
+  update(id: number, data: { name: string; color?: string }) {
+    return api.put(`/tags/${id}`, data)
+  },
+
+  // 删除标签
+  delete(id: number) {
+    return api.delete(`/tags/${id}`)
+  }
+}

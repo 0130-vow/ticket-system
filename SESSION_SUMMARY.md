@@ -541,5 +541,106 @@ docker-compose up -d --build
 
 ---
 
-*最后更新: 2026-05-13*
+## 🆕 2026-05-14 更新 - 工单分类功能
+
+### 数据库增强
+
+#### 新增表
+- ✅ `ticket_category` - 工单分类表（支持二级分类）
+  - id, name, parent_id, level, sort_order, status
+- ✅ `ticket_tag` - 工单标签表
+  - id, name, color
+- ✅ `ticket_tag_relation` - 工单-标签关联表
+  - id, ticket_id, tag_id
+
+#### 表结构变更
+- ✅ `ticket` 表新增 `category_id` 字段
+
+### 后端增强
+
+#### 新增实体类
+- ✅ `entity/Category.java` - 分类实体
+- ✅ `entity/Tag.java` - 标签实体
+- ✅ `entity/TicketTagRelation.java` - 标签关联实体
+
+#### 新增 Mapper
+- ✅ `mapper/CategoryMapper.java`
+- ✅ `mapper/TagMapper.java`
+- ✅ `mapper/TicketTagRelationMapper.java`
+
+#### 新增 Service
+- ✅ `service/CategoryService.java` - 分类服务接口
+- ✅ `service/TagService.java` - 标签服务接口
+- ✅ `service/impl/CategoryServiceImpl.java` - 分类服务实现
+- ✅ `service/impl/TagServiceImpl.java` - 标签服务实现
+
+#### 新增 Controller
+- ✅ `controller/CategoryController.java` - 分类 REST API
+- ✅ `controller/TagController.java` - 标签 REST API
+
+#### 修改文件
+- ✅ `entity/Ticket.java` - 添加 categoryId 字段
+- ✅ `dto/TicketCreateRequest.java` - 添加 categoryId 和 tagIds 字段
+- ✅ `service/TicketService.java` - 查询方法添加 categoryId 参数
+- ✅ `service/impl/TicketServiceImpl.java` - 支持分类查询和标签设置
+- ✅ `controller/TicketController.java` - 支持分类筛选和返回标签信息
+
+### 前端增强
+
+#### 新增页面
+- ✅ `CategoryManage.vue` - 分类和标签管理页面
+  - 分类树形展示
+  - 分类增删改查
+  - 子分类添加
+  - 标签管理（颜色选择）
+
+#### 类型定义更新
+- ✅ `types/ticket.ts` - 新增 Category 和 Tag 接口
+
+#### API 接口新增
+- ✅ `api/ticket.ts` - 新增 categoryApi 和 tagApi
+
+#### 路由更新
+- ✅ `router/index.ts` - 添加 /categories 路由
+
+#### 页面优化
+- ✅ `TicketList.vue` - 添加分类筛选和分类列显示
+- ✅ `CreateTicket.vue` - 添加分类和标签选择
+- ✅ `TicketDetail.vue` - 显示分类和标签信息
+- ✅ `App.vue` - 侧边栏添加分类管理入口（仅管理员）
+
+### API 变更
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/categories` | GET | 获取分类列表（支持树形） |
+| `/api/categories/{id}` | GET | 获取分类详情 |
+| `/api/categories` | POST | 创建分类 |
+| `/api/categories/{id}` | PUT | 更新分类 |
+| `/api/categories/{id}` | DELETE | 删除分类 |
+| `/api/tags` | GET | 获取标签列表 |
+| `/api/tags` | POST | 创建标签 |
+| `/api/tags/{id}` | PUT | 更新标签 |
+| `/api/tags/{id}` | DELETE | 删除标签 |
+| `GET /api/tickets` | GET | 新增 categoryId 筛选参数 |
+
+### 测试数据
+
+| 分类 | 子分类 |
+|------|--------|
+| IT运维 | 硬件故障、软件问题、网络异常 |
+| 业务支持 | OA系统、ERP系统、邮件系统 |
+| 设施维护 | 门禁设备、办公设备 |
+
+| 标签 | 颜色 |
+|------|------|
+| 紧急修复 | #f56c6c |
+| 需远程协助 | #e6a23c |
+| 现场处理 | #409eff |
+| 已知问题 | #909399 |
+| 新功能需求 | #67c23a |
+
+---
+
+*最后更新: 2026-05-14*
 

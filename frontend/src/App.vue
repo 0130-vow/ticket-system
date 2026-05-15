@@ -25,6 +25,10 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>统计报表</span>
         </el-menu-item>
+        <el-menu-item index="/categories" v-if="userStore.userInfo?.role === 'admin'">
+          <el-icon><Setting /></el-icon>
+          <span>分类管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -56,7 +60,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from './stores/user'
-import { HomeFilled, Tickets, Grid, DataAnalysis, ArrowDown } from '@element-plus/icons-vue'
+import { HomeFilled, Tickets, Grid, DataAnalysis, ArrowDown, Setting } from '@element-plus/icons-vue'
 import { onErrorCaptured } from 'vue'
 import { ElMessage } from 'element-plus'
 

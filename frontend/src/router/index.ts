@@ -49,6 +49,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/categories',
+      name: 'CategoryManage',
+      component: () => import('../views/CategoryManage.vue'),
+      meta: { requiresAuth: true, roles: ['admin'] }
+    },
+    {
       path: '/403',
       name: 'Forbidden',
       component: () => import('../components/ErrorPage.vue'),
