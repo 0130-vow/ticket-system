@@ -6,6 +6,7 @@ import com.ticket.dto.TicketCreateRequest;
 import com.ticket.dto.TicketDetailResponse;
 import com.ticket.entity.Ticket;
 import com.ticket.entity.TicketReply;
+import com.ticket.entity.Tag;
 import com.ticket.entity.User;
 import com.ticket.service.ReplyService;
 import com.ticket.service.TagService;

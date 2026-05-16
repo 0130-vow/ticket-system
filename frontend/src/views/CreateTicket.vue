@@ -48,7 +48,23 @@
           </el-option>
         </el-select>
       </el-form-item>
-      
+
+      <el-form-item label="附件">
+        <el-upload
+          v-model:file-list="uploadFiles"
+          multiple
+          :limit="5"
+          :auto-upload="false"
+          :before-upload="beforeUpload"
+          accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.log"
+        >
+          <el-button :icon="Upload">选择文件</el-button>
+          <template #tip>
+            <div class="el-upload__tip">支持图片、文档、日志文件，单个文件最大10MB，最多5个</div>
+          </template>
+        </el-upload>
+      </el-form-item>
+
       <el-form-item>
         <el-button type="primary" @click="handleSubmit" :loading="loading">提交工单</el-button>
         <el-button @click="$router.back()">取消</el-button>
@@ -60,15 +76,17 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ticketApi, userApi, categoryApi, tagApi } from '../api/ticket'
+import { ticketApi, userApi, categoryApi, tagApi, attachmentApi } from '../api/ticket'
 import { type User, type Category, type Tag } from '../types/ticket'
-import { ElMessage, type FormInstance } from 'element-plus'
+import { ElMessage, type FormInstance, type UploadFile } from 'element-plus'
+import { Upload } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
 const users = ref<User[]>([])
 const categoryOptions = ref<Category[]>([])
 const tags = ref<Tag[]>([])
+const uploadFiles = ref<UploadFile[]>([])
 const loading = ref(false)
 
 const form = reactive({
@@ -162,6 +180,27 @@ async function loadTags() {
   }
 }
 
+function beforeUpload(file: File) {
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif',
+    'application/pdf',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain'
+  ]
+  const maxSize = 10 * 1024 * 1024
+
+  if (!allowedTypes.includes(file.type)) {
+    ElMessage.error('不支持的文件类型')
+    return false
+  }
+  if (file.size > maxSize) {
+    ElMessage.error('文件大小超过10MB限制')
+    return false
+  }
+  return true
+}
+
 async function handleSubmit() {
   if (!formRef.value) return
   
@@ -182,6 +221,19 @@ async function handleSubmit() {
       }
       const { data: res } = await ticketApi.create(submitData)
       if (res.code === 200) {
+        // 上传附件
+        if (uploadFiles.value.length > 0 && res.data?.id) {
+          const ticketId = res.data.id
+          for (const file of uploadFiles.value) {
+            if (file.raw) {
+              try {
+                await attachmentApi.upload(file.raw, ticketId)
+              } catch (e) {
+                console.error('附件上传失败:', e)
+              }
+            }
+          }
+        }
         ElMessage.success('工单创建成功')
         router.push('/tickets')
       } else {

@@ -51,6 +51,20 @@ export interface Reply {
   createdAt: string
 }
 
+// 附件
+export interface Attachment {
+  id: number
+  ticketId: number
+  replyId: number | null
+  originalName: string
+  storedName: string
+  filePath: string
+  fileSize: number
+  fileType: string
+  uploaderId: number
+  createdAt: string
+}
+
 // 用户
 export interface User {
   id: number

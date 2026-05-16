@@ -50,7 +50,52 @@
             style="margin-top: 16px"
           />
         </el-card>
-        
+
+        <!-- 附件区域 -->
+        <el-card class="attachments-card">
+          <template #header>
+            <div class="card-header">
+              <div class="section-header">
+                <el-icon><Upload /></el-icon>
+                <span>附件 ({{ attachments.length }})</span>
+              </div>
+              <el-upload
+                :show-file-list="false"
+                :before-upload="beforeUpload"
+                :http-request="handleUpload"
+                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.log"
+              >
+                <el-button type="primary" size="small" :loading="uploading" :icon="Upload">
+                  上传附件
+                </el-button>
+              </el-upload>
+            </div>
+          </template>
+
+          <div v-if="attachments.length > 0" class="attachment-list">
+            <div v-for="att in attachments" :key="att.id" class="attachment-item">
+              <div class="attachment-info">
+                <el-icon class="attachment-icon" :size="20">
+                  <component :is="getFileIcon(att.fileType)" />
+                </el-icon>
+                <div class="attachment-meta">
+                  <span class="attachment-name" @click="handleDownload(att.id)">{{ att.originalName }}</span>
+                  <span class="attachment-size">{{ formatFileSize(att.fileSize) }}</span>
+                </div>
+              </div>
+              <div class="attachment-actions">
+                <el-button link type="primary" size="small" @click="handleDownload(att.id)" :icon="Download">
+                  下载
+                </el-button>
+                <el-button link type="danger" size="small" @click="handleDeleteAttachment(att.id)" :icon="Delete">
+                  删除
+                </el-button>
+              </div>
+            </div>
+          </div>
+          <el-empty v-else description="暂无附件" :image-size="60" />
+        </el-card>
+
         <!-- 回复记录 -->
         <el-card class="replies-card">
           <template #header>
@@ -298,14 +343,15 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ticketApi, categoryApi } from '../api/ticket'
+import { ticketApi, categoryApi, attachmentApi } from '../api/ticket'
 import { useUserStore } from '../stores/user'
-import { STATUS_CONFIG, PRIORITY_CONFIG, type Category, type Tag } from '../types/ticket'
+import { STATUS_CONFIG, PRIORITY_CONFIG, type Category, type Tag, type Attachment } from '../types/ticket'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft, Refresh, Document, ChatDotRound, EditPen, Promotion,
   InfoFilled, Operation, Clock, VideoPlay, Select, Back, CircleCheck,
-  RefreshLeft, RefreshRight, QuestionFilled
+  RefreshLeft, RefreshRight, QuestionFilled, Upload, Delete, Download,
+  Picture, Grid
 } from '@element-plus/icons-vue'
 
 interface UserBrief {
@@ -323,6 +369,8 @@ const replies = ref<any[]>([])
 const userMap = ref<Record<number, UserBrief>>({})
 const categoryOptions = ref<Category[]>([])
 const ticketTags = ref<Tag[]>([])
+const attachments = ref<Attachment[]>([])
+const uploading = ref(false)
 const loading = ref(false)
 const submitting = ref(false)
 const newReply = ref('')
@@ -398,7 +446,8 @@ async function loadData() {
     await Promise.all([
       loadTicket(),
       loadReplies(),
-      loadCategories()
+      loadCategories(),
+      loadAttachments()
     ])
   } finally {
     loading.value = false
@@ -434,6 +483,65 @@ async function loadCategories() {
   } catch (error) {
     console.error('Failed to load categories:', error)
   }
+}
+
+async function loadAttachments() {
+  try {
+    const { data: res } = await attachmentApi.getByTicketId(route.params.id as string)
+    if (res.code === 200) {
+      attachments.value = res.data || []
+    }
+  } catch (error) {
+    console.error('Failed to load attachments:', error)
+  }
+}
+
+async function handleUpload(uploadFile: any) {
+  uploading.value = true
+  try {
+    const { data: res } = await attachmentApi.upload(uploadFile.raw, Number(route.params.id))
+    if (res.code === 200) {
+      ElMessage.success('上传成功')
+      await loadAttachments()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function handleDeleteAttachment(id: number) {
+  try {
+    await ElMessageBox.confirm('确定删除此附件？', '确认', { type: 'warning' })
+    const { data: res } = await attachmentApi.delete(id)
+    if (res.code === 200) {
+      ElMessage.success('删除成功')
+      await loadAttachments()
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
+  }
+}
+
+function handleDownload(id: number) {
+  window.open(attachmentApi.getDownloadUrl(id), '_blank')
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+function getFileIcon(fileType: string) {
+  if (fileType.startsWith('image/')) return 'Picture'
+  if (fileType.includes('pdf')) return 'Document'
+  if (fileType.includes('word') || fileType.includes('document')) return 'Document'
+  if (fileType.includes('excel') || fileType.includes('sheet')) return 'Grid'
+  return 'Document'
 }
 
 async function loadReplies() {
@@ -487,6 +595,27 @@ function handleReplyFilterChange() {
 
 function insertQuickReply(text: string) {
   newReply.value = text
+}
+
+function beforeUpload(file: File) {
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif',
+    'application/pdf',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain'
+  ]
+  const maxSize = 10 * 1024 * 1024
+
+  if (!allowedTypes.includes(file.type)) {
+    ElMessage.error('不支持的文件类型')
+    return false
+  }
+  if (file.size > maxSize) {
+    ElMessage.error('文件大小超过10MB限制')
+    return false
+  }
+  return true
 }
 
 async function submitReply() {
@@ -653,6 +782,7 @@ function getCategoryName(categoryId: number | null | undefined) {
 
 .main-card,
 .replies-card,
+.attachments-card,
 .info-card,
 .action-card,
 .history-card {
@@ -861,5 +991,68 @@ function getCategoryName(categoryId: number | null | undefined) {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.attachment-item:hover {
+  background: #ecf5ff;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-icon {
+  color: #409eff;
+  flex-shrink: 0;
+}
+
+.attachment-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: #303133;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-name:hover {
+  color: #409eff;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: #909399;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 </style>

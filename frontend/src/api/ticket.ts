@@ -203,3 +203,32 @@ export const tagApi = {
     return api.delete(`/tags/${id}`)
   }
 }
+
+// 附件相关接口
+export const attachmentApi = {
+  // 上传附件
+  upload(file: File, ticketId: number, replyId?: number) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('ticketId', String(ticketId))
+    if (replyId) formData.append('replyId', String(replyId))
+    return api.post('/attachments/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  // 获取工单附件列表
+  getByTicketId(ticketId: number | string) {
+    return api.get(`/attachments/ticket/${ticketId}`)
+  },
+
+  // 删除附件
+  delete(id: number) {
+    return api.delete(`/attachments/${id}`)
+  },
+
+  // 获取下载链接
+  getDownloadUrl(id: number) {
+    return `http://localhost:8080/api/attachments/download/${id}`
+  }
+}

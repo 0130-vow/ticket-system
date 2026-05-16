@@ -7,6 +7,10 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 mybatis-plus:
   configuration:
@@ -16,3 +20,9 @@ mybatis-plus:
 jwt:
   secret: ${JWT_SECRET:ticket-system-jwt-secret-key}
   expiration: 86400000
+
+# 文件上传配置
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:uploads}
+  max-size: 10485760  # 10MB
+  allowed-types: image/jpeg,image/png,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain

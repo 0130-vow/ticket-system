@@ -642,5 +642,66 @@ docker-compose up -d --build
 
 ---
 
-*最后更新: 2026-05-14*
+## 🆕 2026-05-15 更新 - 附件管理功能
+
+### 数据库增强
+
+#### 新增表
+- ✅ `ticket_attachment` - 附件表
+  - id, ticket_id, reply_id, original_name, stored_name, file_path, file_size, file_type, uploader_id
+
+### 后端增强
+
+#### 新增文件
+- ✅ `entity/Attachment.java` - 附件实体类
+- ✅ `mapper/AttachmentMapper.java` - 附件 Mapper
+- ✅ `service/AttachmentService.java` - 附件服务接口
+- ✅ `service/impl/AttachmentServiceImpl.java` - 附件服务实现
+  - 文件上传（UUID 文件名、按日期目录存储）
+  - 文件类型验证（图片/文档/日志）
+  - 文件大小限制（10MB）
+  - 文件删除（物理文件 + 数据库记录）
+- ✅ `controller/AttachmentController.java` - 附件 REST API
+  - POST `/api/attachments/upload` - 上传附件
+  - GET `/api/attachments/ticket/{ticketId}` - 获取工单附件
+  - GET `/api/attachments/download/{id}` - 下载附件
+  - DELETE `/api/attachments/{id}` - 删除附件
+- ✅ `config/FileUploadConfig.java` - 静态资源映射
+
+#### 修改文件
+- ✅ `application.yml` - 添加文件上传配置（最大大小、存储路径、允许类型）
+
+### 前端增强
+
+#### 类型定义更新
+- ✅ `types/ticket.ts` - 新增 Attachment 接口
+
+#### API 接口新增
+- ✅ `api/ticket.ts` - 新增 attachmentApi（upload、getByTicketId、delete、getDownloadUrl）
+
+#### 页面优化
+- ✅ `TicketDetail.vue` - 添加附件展示区域和上传组件
+  - 附件列表展示（文件名、大小、类型图标）
+  - 上传附件功能
+  - 下载附件功能
+  - 删除附件功能
+- ✅ `CreateTicket.vue` - 添加附件上传组件
+  - 创建工单时可选择附件
+  - 工单创建后自动上传附件
+
+### 功能特性
+
+| 功能 | 说明 |
+|------|------|
+| 文件上传 | 支持拖拽、点击上传，最多5个文件 |
+| 文件类型 | 图片 (jpg/png/gif)、文档 (pdf/doc/xls)、日志 (txt/log) |
+| 文件大小 | 单文件最大 10MB |
+| 存储方式 | 本地文件系统，按日期目录组织 |
+| 文件命名 | UUID 避免冲突，保留原始文件名 |
+| 文件下载 | 支持中文文件名编码 |
+| 文件删除 | 同时删除物理文件和数据库记录 |
+
+---
+
+*最后更新: 2026-05-15*
 

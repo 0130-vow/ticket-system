@@ -77,6 +77,22 @@ CREATE TABLE IF NOT EXISTS ticket_tag_relation (
     INDEX idx_tag (tag_id)
 );
 
+-- 附件表
+CREATE TABLE IF NOT EXISTS ticket_attachment (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    ticket_id BIGINT NOT NULL,
+    reply_id BIGINT COMMENT '关联回复ID，NULL表示工单附件',
+    original_name VARCHAR(255) NOT NULL COMMENT '原始文件名',
+    stored_name VARCHAR(255) NOT NULL COMMENT '存储文件名（UUID）',
+    file_path VARCHAR(500) NOT NULL COMMENT '文件存储路径',
+    file_size BIGINT NOT NULL COMMENT '文件大小（字节）',
+    file_type VARCHAR(50) NOT NULL COMMENT '文件MIME类型',
+    uploader_id BIGINT NOT NULL COMMENT '上传者ID',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ticket (ticket_id),
+    INDEX idx_reply (reply_id)
+);
+
 -- 插入测试数据 (密码使用BCrypt加密，admin123)
 INSERT INTO sys_user (id, username, password, name, role, department) VALUES
 (1, 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '管理员', 'admin', 'IT部门'),
