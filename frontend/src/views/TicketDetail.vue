@@ -351,7 +351,6 @@ import {
   ArrowLeft, Refresh, Document, ChatDotRound, EditPen, Promotion,
   InfoFilled, Operation, Clock, VideoPlay, Select, Back, CircleCheck,
   RefreshLeft, RefreshRight, QuestionFilled, Upload, Delete, Download,
-  Picture, Grid
 } from '@element-plus/icons-vue'
 
 interface UserBrief {
